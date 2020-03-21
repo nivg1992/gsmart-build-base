@@ -1,6 +1,9 @@
 FROM alpine
 
 ENV LANG=C.UTF-8
+ENV TERRAFORM_VERSION 0.12.24
+ENV OC_VERSION 3.11.0
+ENV HELM_VERSION 2.12.3
 
 # Here we install GNU libc (aka glibc) and set C.UTF-8 locale as default.
 
@@ -42,9 +45,9 @@ RUN ALPINE_GLIBC_BASE_URL="https://github.com/sgerrand/alpine-pkg-glibc/releases
         "$ALPINE_GLIBC_BIN_PACKAGE_FILENAME" \
         "$ALPINE_GLIBC_I18N_PACKAGE_FILENAME"
 
-RUN apk update && apk add ca-certificates jq curl && rm -rf /var/cache/apk/*
+RUN apk add --no-cache bash
 
-ENV TERRAFORM_VERSION 0.12.24
+RUN apk add --no-cache ca-certificates jq curl openssl
 
 RUN apk --update --no-cache add git openssh-client
 
@@ -53,9 +56,16 @@ RUN cd /usr/local/bin && \
     unzip terraform_${TERRAFORM_VERSION}_linux_amd64.zip && \
     rm terraform_${TERRAFORM_VERSION}_linux_amd64.zip
 
-RUN wget -O openshift-origin-client-tools.tar.gz https://github.com/openshift/origin/releases/download/v3.11.0/openshift-origin-client-tools-v3.11.0-0cbc58b-linux-64bit.tar.gz && \
+RUN wget -O openshift-origin-client-tools.tar.gz https://github.com/openshift/origin/releases/download/v${OC_VERSION}/openshift-origin-client-tools-v${OC_VERSION}-0cbc58b-linux-64bit.tar.gz && \
     tar -xvzf openshift-origin-client-tools.tar.gz && \
-    mv openshift-origin-client-tools-v3.11.0-0cbc58b-linux-64bit/oc /bin/oc && \
-    rm -rf openshift-origin-client-tools.tar.gz openshift-origin-client-tools-v3.11.0-0cbc58b-linux-64bit
+    mv openshift-origin-client-tools-v${OC_VERSION}-0cbc58b-linux-64bit/oc /usr/bin/oc && \
+    mv openshift-origin-client-tools-v${OC_VERSION}-0cbc58b-linux-64bit/kubectl /usr/bin/kubectl && \
+    rm -rf openshift-origin-client-tools.tar.gz openshift-origin-client-tools-v${OC_VERSION}-0cbc58b-linux-64bit
+
+RUN wget https://storage.googleapis.com/kubernetes-helm/helm-v${HELM_VERSION}-linux-amd64.tar.gz && \
+    tar -xvzf helm-v${HELM_VERSION}-linux-amd64.tar.gz && \
+    mv linux-amd64/helm /usr/bin/helm && \
+    mv linux-amd64/tiller /usr/bin/tiller && \
+    rm -rf helm-v${HELM_VERSION}-linux-amd64.tar.gz linux-amd64
 
 ENTRYPOINT [""]
